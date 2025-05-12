@@ -1,0 +1,22 @@
+[
+  {
+    "user": "hello",
+    "bot": "What type of website are you looking to create? (e.g., personal blog, e-commerce, portfolio, business, etc.)"
+  },
+  {
+    "user": "i need the website for my girlfriend birthday website in which i need to add 5 photo for her",
+    "bot": "What kind of design or theme are you thinking of for the birthday website? (e.g., romantic, fun, elegant, etc.)"
+  },
+  {
+    "user": "romantic",
+    "bot": "Do you want to include any text or messages on the website, such as a birthday message or favorite memories?"
+  },
+  {
+    "user": "yes",
+    "bot": "What specific messages or memories would you like to include on the website?"
+  },
+  {
+    "user": "you can add romantic message your own",
+    "bot": "What specific romantic messages would you like to include, or would you prefer me to suggest some? Also, do you have a specific color scheme in mind for the website?"
+  }
+]
