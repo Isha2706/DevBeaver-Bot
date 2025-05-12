@@ -20,13 +20,32 @@ bot.start((ctx) => {
     ctx.reply("Welcome! Send me a message to begin.")
 });
 
+// for POST /reset api
+bot.command("reset", async (ctx) => {
+    const userId = ctx.from.id.toString();
+  
+    try {
+      const response = await fetch(`${process.env.BASE_URL}/reset?userId=${userId}`);
+      const data = await response.json();
+  
+      if (response.ok) {
+        await ctx.reply("✅ Your data has been reset successfully. Let's start fresh!");
+      } else {
+        await ctx.reply(`⚠️ Failed to reset: ${data.error}`);
+      }
+    } catch (error) {
+      console.error("Reset error:", error.message);
+      await ctx.reply("❌ An error occurred while resetting your data.");
+    }
+  });
+  
 // for POST /chat api
 bot.on("text", async (ctx) => {
   const message = ctx.message.text;
   const userId = ctx.from.id.toString();
 
   try {
-    const res = await fetch("http://localhost:3001/chat", {
+    const res = await fetch(`${process.env.BASE_URL}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message, userId }),
