@@ -20,6 +20,26 @@ bot.start((ctx) => {
     ctx.reply("Welcome! Send me a message to begin.")
 });
 
+// for POST /chat api
+bot.on("text", async (ctx) => {
+  const message = ctx.message.text;
+  const userId = ctx.from.id.toString();
+
+  try {
+    const res = await fetch("http://localhost:3001/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, userId }),
+    });
+
+    const data = await res.json();
+    await ctx.reply(data.reply || "No response from server.");
+  } catch (err) {
+    console.error("Bot error:", err.message);
+    await ctx.reply("Error connecting to server.");
+  }
+});
+
 console.log("🤖 Bot started");
 bot.launch();
 
