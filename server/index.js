@@ -11,6 +11,52 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 app.use(bodyParser.json());
 
+// GET: Reset profile and history for a specific user
+app.get("/reset", (req, res) => {
+  const userId = req.query.userId;
+
+  if (!userId) {
+    return res.status(400).json({ error: "Missing userId in query params." });
+  }
+
+  const userDir = path.join("db", userId);
+  const historyFile = path.join(userDir, "chat-history.json");
+  const profileFile = path.join(userDir, "user-data.json");
+
+  const defaultProfile = {
+    websiteType: "",
+    targetAudience: "",
+    mainGoal: "",
+    colorScheme: "",
+    theme: "",
+    pages: [],
+    sections: [],
+    features: [],
+    content: {},
+    designPreferences: {},
+    images: [],
+    fonts: "",
+    contactInfo: {},
+    socialLinks: {},
+    customScripts: "",
+    branding: {},
+    updateRequests: [],
+    additionalNotes: "",
+  };
+
+  try {
+    if (!fs.existsSync(userDir)) fs.mkdirSync(userDir, { recursive: true });
+
+    fs.writeFileSync(historyFile, `[]`);
+    fs.writeFileSync(profileFile, JSON.stringify(defaultProfile, null, 2));
+
+    res.status(200).json({ message: `Reset successful for user: ${userId}` });
+  } catch (error) {
+    console.error("Reset Error:", error);
+    res.status(500).json({ error: "Failed to reset files" });
+  }
+});
+
 // Dynamic user-specific chat handler
 app.post("/chat", async (req, res) => {
   const { message, userId } = req.body;
