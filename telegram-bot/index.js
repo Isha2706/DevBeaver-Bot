@@ -8,10 +8,9 @@ import FormData from "form-data";
 
 dotenv.config();
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
-
 // ESM-friendly __dirname
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const bot = new Telegraf(process.env.BOT_TOKEN);
 
 // Telegram Bot UserName = a_i_web_bot BotName = SiteBuilder Bot
 bot.start((ctx) => {
@@ -46,46 +45,47 @@ bot.command("reset", async (ctx) => {
 
 // for POST /upload-image api
 bot.on("photo", async (ctx) => {
+  const caption = ctx.message.caption || "";
   const userId = ctx.from.id.toString();
+  const tempDir = path.join(__dirname, "temp");
 
   try {
+    fs.mkdirSync(tempDir, { recursive: true });
+
     const photos = ctx.message.photo;
-    const highestRes = photos[photos.length - 1];
-    const fileId = highestRes.file_id;
+    const fileId = photos[photos.length - 1].file_id;
 
-    // Get image link
     const fileLink = await ctx.telegram.getFileLink(fileId);
-
-    // Download the image
     const response = await fetch(fileLink.href);
     const buffer = await response.buffer();
 
-    const localPath = `temp/${Date.now()}-${userId}.jpg`;
+    const fileName = `${Date.now()}-${userId}.jpg`;
+    const localPath = path.join(tempDir, fileName);
     fs.writeFileSync(localPath, buffer);
 
-    // Upload to server
     const form = new FormData();
     form.append("userId", userId);
+    form.append("text", caption);
     form.append("images", fs.createReadStream(localPath));
 
-    const uploadRes = await fetch("http://localhost:3001/upload-image", {
+    //console.log('ctx:',ctx);
+    
+    const uploadRes = await fetch(`${process.env.BASE_URL}/upload-image`, {
       method: "POST",
       body: form,
     });
 
     const result = await uploadRes.json();
+    fs.unlinkSync(localPath); // Cleanup
 
     if (result.success) {
-      await ctx.reply(`✅ Image uploaded and analyzed:\n\n${result.images.map(i => `📷 ${i.originalname}\n🧠 ${i.aiAnalysis}`).join('\n\n')}`);
+      await ctx.reply("✅ Image or images are uploaded and analyzed.");
     } else {
-      await ctx.reply(`❌ Failed: ${result.error}`);
+      await ctx.reply(`❌ Upload failed: ${result.error}`);
     }
-
-    // Clean up
-    fs.unlinkSync(localPath);
-  } catch (error) {
-    console.error("Photo Upload Error:", error.message);
-    await ctx.reply("⚠️ Failed to process image.");
+  } catch (err) {
+    console.error("Photo Upload Error:", err.message);
+    await ctx.reply("⚠️ Failed to upload or analyze the image.");
   }
 });
 

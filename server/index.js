@@ -1,25 +1,31 @@
 import express from "express";
 import dotenv from "dotenv";
-import fs from "fs";
+import fs from "fs-extra";
 import path from "path";
 import OpenAI from "openai";
 import bodyParser from "body-parser";
 import multer from "multer";
-import fs from "fs-extra";
+import cors from "cors";
+import { fileURLToPath } from "url";
 
 dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const app = express();
+
+app.use(cors("*"));
+app.use(express.json());
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 app.use(bodyParser.json());
 
-// Multer config to store in user-specific folders
+// Multer storage (ensures uploads dir exists)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const userId = req.body.userId;
-    const uploadPath = path.join("db", userId, "uploads");
-
-    fs.ensureDirSync(uploadPath);
+    const uploadPath = path.join(__dirname, "db", userId, "uploads");
+    fs.ensureDirSync(uploadPath); 
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
@@ -27,7 +33,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage: storage });
 
 // POST: Upload multiple images with a text and analyze using OpenAI
 app.post("/upload-image", upload.array("images", 10), async (req, res) => {
@@ -36,28 +42,22 @@ app.post("/upload-image", upload.array("images", 10), async (req, res) => {
     const userId = req.body.userId;
     const userText = req.body.text || "";
 
-    if (!files || files.length === 0 || !userId) {
-      return res.status(400).json({ error: "Files or userId missing" });
+    if (!files || !userId) {
+      return res.status(400).json({ error: "Missing files or userId" });
     }
 
-    const userDir = path.join("db", userId);
+    const userDir = path.join(__dirname, "db", userId);
     const profileFile = path.join(userDir, "user-data.json");
     const historyFile = path.join(userDir, "chat-history.json");
 
     fs.ensureFileSync(profileFile);
     fs.ensureFileSync(historyFile);
 
-    let userProfile = {};
-    let chatHistory = [];
+    // Load existing profile and history
+    const userProfile = JSON.parse(fs.readFileSync(profileFile));
+    const chatHistory = JSON.parse(fs.readFileSync(historyFile));
 
-    try {
-      userProfile = JSON.parse(fs.readFileSync(profileFile));
-      chatHistory = JSON.parse(fs.readFileSync(historyFile));
-    } catch {
-      userProfile = { images: [] };
-      chatHistory = [];
-    }
-
+    // Ensure images field exists
     if (!userProfile.images) userProfile.images = [];
 
     const newImagesData = [];
@@ -65,19 +65,26 @@ app.post("/upload-image", upload.array("images", 10), async (req, res) => {
     for (const file of files) {
       const imagePath = file.path;
 
-      // Analyze image with OpenAI
       const analysis = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: "You are a helpful assistant that describes images." },
+          {
+            role: "system",
+            content: "You are a helpful assistant that describes images.",
+          },
           {
             role: "user",
             content: [
-              { type: "text", text: "What kind of image is this and what is its use?" },
+              {
+                type: "text",
+                text: "What kind of image is this and what is its use?",
+              },
               {
                 type: "image_url",
                 image_url: {
-                  url: `data:image/${path.extname(file.filename).slice(1)};base64,${fs.readFileSync(imagePath, {
+                  url: `data:image/${path
+                    .extname(file.filename)
+                    .slice(1)};base64,${fs.readFileSync(imagePath, {
                     encoding: "base64",
                   })}`,
                 },
@@ -103,7 +110,6 @@ app.post("/upload-image", upload.array("images", 10), async (req, res) => {
       newImagesData.push(imageData);
     }
 
-    // Log to history
     chatHistory.push({
       user: `Uploaded ${files.length} image(s) with text: "${userText}"`,
       bot: newImagesData
@@ -111,7 +117,6 @@ app.post("/upload-image", upload.array("images", 10), async (req, res) => {
         .join("\n\n"),
     });
 
-    // Save
     fs.writeFileSync(profileFile, JSON.stringify(userProfile, null, 2));
     fs.writeFileSync(historyFile, JSON.stringify(chatHistory, null, 2));
 
@@ -191,9 +196,13 @@ app.post("/chat", async (req, res) => {
     const userProfile = JSON.parse(fs.readFileSync(profileFile));
     const updatedHistory = [...chatHistory, { user: message, bot: "" }];
 
-    const formattedConversation = updatedHistory.map(entry =>
-      entry.bot ? `User: ${entry.user}\nBot: ${entry.bot}` : `User: ${entry.user}`
-    ).join("\n");
+    const formattedConversation = updatedHistory
+      .map((entry) =>
+        entry.bot
+          ? `User: ${entry.user}\nBot: ${entry.bot}`
+          : `User: ${entry.user}`
+      )
+      .join("\n");
 
     const promptQuick = `
 You are a helpful assistant that talks to users to understand and build their ideal website.
@@ -220,7 +229,10 @@ Respond ONLY in this JSON format:
     updatedHistory[updatedHistory.length - 1].bot = parsed.nextQuestion;
 
     fs.writeFileSync(historyFile, JSON.stringify(updatedHistory, null, 2));
-    fs.writeFileSync(profileFile, JSON.stringify(parsed.updatedUserProfile, null, 2));
+    fs.writeFileSync(
+      profileFile,
+      JSON.stringify(parsed.updatedUserProfile, null, 2)
+    );
 
     res.json({ reply: parsed.nextQuestion, chatHistory: updatedHistory });
   } catch (error) {
@@ -230,4 +242,6 @@ Respond ONLY in this JSON format:
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`🟢 Server running on http://localhost:${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🟢 Server running on http://localhost:${PORT}`)
+);
