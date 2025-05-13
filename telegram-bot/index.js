@@ -43,49 +43,29 @@ bot.command("reset", async (ctx) => {
   }
 });
 
-// for POST /upload-image api
-bot.on("photo", async (ctx) => {
-  const caption = ctx.message.caption || "";
-  const userId = ctx.from.id.toString();
-  const tempDir = path.join(__dirname, "temp");
+// for POST /promptbackground api
+bot.command("generate", async (ctx) => {
+  const userId = ctx.chat.id.toString(); // Use chat ID as userId
+
+  await ctx.reply("Generating your website... Please wait.");
 
   try {
-    fs.mkdirSync(tempDir, { recursive: true });
-
-    const photos = ctx.message.photo;
-    const fileId = photos[photos.length - 1].file_id;
-
-    const fileLink = await ctx.telegram.getFileLink(fileId);
-    const response = await fetch(fileLink.href);
-    const buffer = await response.buffer();
-
-    const fileName = `${Date.now()}-${userId}.jpg`;
-    const localPath = path.join(tempDir, fileName);
-    fs.writeFileSync(localPath, buffer);
-
-    const form = new FormData();
-    form.append("userId", userId);
-    form.append("text", caption);
-    form.append("images", fs.createReadStream(localPath));
-
-    //console.log('ctx:',ctx);
-    
-    const uploadRes = await fetch(`${process.env.BASE_URL}/upload-image`, {
+    const response = await fetch(`${process.env.BASE_URL}/promptBackground`, {
       method: "POST",
-      body: form,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
     });
 
-    const result = await uploadRes.json();
-    fs.unlinkSync(localPath); // Cleanup
+    const data = await response.json();
 
-    if (result.success) {
-      await ctx.reply("✅ Image or images are uploaded and analyzed.");
+    if (response.ok) {
+      await ctx.reply("✅ Website generated successfully!");
     } else {
-      await ctx.reply(`❌ Upload failed: ${result.error}`);
+      await ctx.reply(`❌ Failed to generate: ${data.error}`);
     }
   } catch (err) {
-    console.error("Photo Upload Error:", err.message);
-    await ctx.reply("⚠️ Failed to upload or analyze the image.");
+    console.error("Telegram Bot Error:", err.message);
+    await ctx.reply("❌ An error occurred while generating your website.");
   }
 });
 

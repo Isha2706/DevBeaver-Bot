@@ -1,37 +1,60 @@
 {
-  "websiteType": "",
-  "targetAudience": "",
-  "mainGoal": "",
-  "colorScheme": "",
-  "theme": "",
-  "pages": [],
-  "sections": [],
-  "features": [],
-  "content": {},
-  "designPreferences": {},
-  "images": [
-    {
-      "filename": "1747120239273-1747120239235-5525570830.jpg",
-      "originalname": "1747120239235-5525570830.jpg",
-      "url": "/uploads/1747120239273-1747120239235-5525570830.jpg",
-      "uploadedAt": "2025-05-13T07:10:45.050Z",
-      "description": "",
-      "aiAnalysis": "This image depicts a cute, cartoon-style cat wearing a hoodie and glasses, sitting at a laptop with a coffee cup beside it. This type of image is commonly used as a sticker or graphic in various contexts, such as:\n\n1. **Decorative Stickers**: For personal items like laptops, water bottles, and planners.\n2. **Social Media Posts**: To convey a fun or relatable theme, especially about working from home or studying.\n3. **Merchandise**: It could be printed on apparel, mugs, or notebooks.\n4. **Digital Communication**: Used in messages or chats to express a playful or cozy vibe related to productivity.\n\nOverall, it effectively captures a charming blend of cuteness and a modern work-from-home aesthetic."
-    },
-    {
-      "filename": "1747120254009-1747120253978-5525570830.jpg",
-      "originalname": "1747120253978-5525570830.jpg",
-      "url": "/uploads/1747120254009-1747120253978-5525570830.jpg",
-      "uploadedAt": "2025-05-13T07:11:00.525Z",
-      "description": "test2",
-      "aiAnalysis": "The image depicts a digital or abstract illustration, primarily in a blue color palette, showcasing several individuals engaging in activities related to technology and data management. \n\n**Key Features:**\n- **Characters:** Four figures are shown, with one holding a megaphone, indicating communication or announcement, while another is seated with a laptop, suggesting work or analysis.\n- **Background Elements:** There are boxes with icons that likely represent data visualization, video content, and other digital interfaces.\n- **Style:** The illustration uses isometric design, giving a three-dimensional effect to the flat graphics.\n\n**Possible Uses:**\n- **Marketing Materials:** It could be used in presentations, brochures, or websites related to technology, data analytics, or business solutions.\n- **Educational Content:** It may serve educational purposes for workshops or tutorials on digital tools or collaborative work.\n- **Tech Companies:** It might be relevant for companies promoting software or platforms that focus on teamwork, data analysis, or digital communication.\n\nOverall, it emphasizes modern"
-    }
+  "websiteType": "business",
+  "targetAudience": "beginners, individuals seeking stress relief, corporate clients",
+  "mainGoal": "generate bookings for meditation sessions, provide valuable information about meditation practices, and build a supportive community around mindfulness and well-being",
+  "colorScheme": "calming color scheme with soft earthy tones like muted blues, greens, and warm neutrals",
+  "theme": "nature-inspired theme with elements like gentle gradients, wood textures, and leaf or water motifs; serene, simple, and welcoming",
+  "pages": [
+    "Home",
+    "About",
+    "Services",
+    "Blog",
+    "Contact",
+    "FAQ",
+    "Resources"
   ],
-  "fonts": "",
-  "contactInfo": {},
-  "socialLinks": {},
-  "customScripts": "",
-  "branding": {},
-  "updateRequests": [],
-  "additionalNotes": ""
+  "features": [
+    "Booking system",
+    "Newsletter sign-up",
+    "Classes/events calendar",
+    "Testimonials section",
+    "FAQs section",
+    "Community forum",
+    "Resources page"
+  ],
+  "content": {
+    "Home": {
+      "Introduction": "Introduction to meditation services, hero section with calming images, CTA buttons, and an overview."
+    },
+    "About": {
+      "Information": "Information about the meditation instructors, philosophy, and mission statement.",
+      "DummyContent": "Our instructors are certified and passionate about guiding you on your meditation journey."
+    },
+    "Services": {
+      "List": "List of available meditation sessions (e.g., guided meditation, group sessions, one-on-one coaching).",
+      "DummyContent": "Join our 30-minute guided meditation sessions designed to bring peace and focus."
+    },
+    "Blog": {
+      "Articles": "Articles on meditation techniques, tips for mindfulness, and self-care practices.",
+      "DummyContent": "10 Tips for a Successful Meditation Practice and How to Stay Focused During Meditation."
+    },
+    "Contact": {
+      "Form": "Contact form, location, and social media links.",
+      "DummyContent": "Reach out to us via our form or connect with us on social media. Email: contact@meditate.com"
+    },
+    "FAQ": {
+      "Questions": "Frequently asked questions about meditation practices, session bookings, and policies.",
+      "DummyContent": "What should I bring to my first session? Do you offer online sessions?"
+    },
+    "Resources": {
+      "Content": [
+        "Downloadable Guides: PDF guides on meditation techniques and practices.",
+        "Meditation Videos: Short video clips of guided meditations for beginners.",
+        "Articles and Blog Posts: Links to in-depth articles on meditation.",
+        "Audio Files: Downloadable audio files of guided meditations.",
+        "Books/Recommended Reading: List of book recommendations.",
+        "Community Resources: Information on community events."
+      ]
+    }
+  }
 }

@@ -12,6 +12,7 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+app.use(express.json());
 
 app.use(cors("*"));
 app.use(express.json());
@@ -19,117 +20,6 @@ app.use(express.json());
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 app.use(bodyParser.json());
-
-// Multer storage (ensures uploads dir exists)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const userId = req.body.userId;
-    const uploadPath = path.join(__dirname, "db", userId, "uploads");
-    fs.ensureDirSync(uploadPath); 
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
-
-const upload = multer({ storage: storage });
-
-// POST: Upload multiple images with a text and analyze using OpenAI
-app.post("/upload-image", upload.array("images", 10), async (req, res) => {
-  try {
-    const files = req.files;
-    const userId = req.body.userId;
-    const userText = req.body.text || "";
-
-    if (!files || !userId) {
-      return res.status(400).json({ error: "Missing files or userId" });
-    }
-
-    const userDir = path.join(__dirname, "db", userId);
-    const profileFile = path.join(userDir, "user-data.json");
-    const historyFile = path.join(userDir, "chat-history.json");
-
-    fs.ensureFileSync(profileFile);
-    fs.ensureFileSync(historyFile);
-
-    // Load existing profile and history
-    const userProfile = JSON.parse(fs.readFileSync(profileFile));
-    const chatHistory = JSON.parse(fs.readFileSync(historyFile));
-
-    // Ensure images field exists
-    if (!userProfile.images) userProfile.images = [];
-
-    const newImagesData = [];
-
-    for (const file of files) {
-      const imagePath = file.path;
-
-      const analysis = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful assistant that describes images.",
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "What kind of image is this and what is its use?",
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/${path
-                    .extname(file.filename)
-                    .slice(1)};base64,${fs.readFileSync(imagePath, {
-                    encoding: "base64",
-                  })}`,
-                },
-              },
-            ],
-          },
-        ],
-        max_tokens: 200,
-      });
-
-      const aiDescription = analysis.choices[0].message.content;
-
-      const imageData = {
-        filename: file.filename,
-        originalname: file.originalname,
-        url: `/uploads/${file.filename}`,
-        uploadedAt: new Date().toISOString(),
-        description: userText,
-        aiAnalysis: aiDescription,
-      };
-
-      userProfile.images.push(imageData);
-      newImagesData.push(imageData);
-    }
-
-    chatHistory.push({
-      user: `Uploaded ${files.length} image(s) with text: "${userText}"`,
-      bot: newImagesData
-        .map((img) => `AI Analysis for ${img.originalname}: ${img.aiAnalysis}`)
-        .join("\n\n"),
-    });
-
-    fs.writeFileSync(profileFile, JSON.stringify(userProfile, null, 2));
-    fs.writeFileSync(historyFile, JSON.stringify(chatHistory, null, 2));
-
-    res.status(200).json({
-      success: true,
-      images: newImagesData,
-      message: "Images uploaded and analyzed successfully.",
-    });
-  } catch (err) {
-    console.error("Upload Error:", err);
-    res.status(500).json({ error: "Image upload or analysis failed." });
-  }
-});
 
 // GET: Reset profile and history for a specific user
 app.get("/reset", (req, res) => {
@@ -174,6 +64,81 @@ app.get("/reset", (req, res) => {
   } catch (error) {
     console.error("Reset Error:", error);
     res.status(500).json({ error: "Failed to reset files" });
+  }
+});
+
+// POST: Generate dynamic webSite from profile
+app.post("/promptBackground", async (req, res) => {
+  try {
+    const userId = req.body.userId;
+    if (!userId) return res.status(400).json({ error: "Missing userId" });
+
+    const userDir = path.join(__dirname, "db", userId);
+    const profileFile = path.join(userDir, "user-data.json");
+    const historyFile = path.join(userDir, "chat-history.json");
+    const websiteDir = path.join(userDir, "webSite");
+
+    fs.ensureDirSync(websiteDir);
+    fs.ensureFileSync(profileFile);
+    fs.ensureFileSync(historyFile);
+
+    const userProfile = JSON.parse(fs.readFileSync(profileFile, "utf-8"));
+    const chatHistory = JSON.parse(fs.readFileSync(historyFile, "utf-8"));
+
+    // Existing or default blank code
+    const websiteCode = {
+      html: fs.existsSync(path.join(websiteDir, "index.html"))
+        ? fs.readFileSync(path.join(websiteDir, "index.html"), "utf-8")
+        : "<!-- empty -->",
+      css: fs.existsSync(path.join(websiteDir, "styles.css"))
+        ? fs.readFileSync(path.join(websiteDir, "styles.css"), "utf-8")
+        : "/* empty */",
+      js: fs.existsSync(path.join(websiteDir, "script.js"))
+        ? fs.readFileSync(path.join(websiteDir, "script.js"), "utf-8")
+        : "// empty",
+    };
+
+    const systemPromptBackground = `
+You are a full-stack AI developer. Create a dynamic, multi-page website using only one HTML file, one CSS file, and one JavaScript file...
+
+[... same as your prompt, unchanged ...]
+
+${JSON.stringify(userProfile, null, 2)}
+${JSON.stringify(chatHistory, null, 2)}
+
+Here is the current website code:
+HTML: ${websiteCode.html}
+CSS: ${websiteCode.css}
+JS: ${websiteCode.js}
+
+Respond ONLY in this JSON format:
+{
+  "updatedUserProfile": { ... },
+  "updatedCode": {
+    "html": "string",
+    "css": "string",
+    "js": "string"
+  }
+}
+`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "system", content: systemPromptBackground }],
+    });
+
+    const parsed = JSON.parse(response.choices[0].message.content);
+
+    // Save new data
+    fs.writeFileSync(profileFile, JSON.stringify(parsed.updatedUserProfile, null, 2));
+    fs.writeFileSync(path.join(websiteDir, "index.html"), parsed.updatedCode.html);
+    fs.writeFileSync(path.join(websiteDir, "styles.css"), parsed.updatedCode.css);
+    fs.writeFileSync(path.join(websiteDir, "script.js"), parsed.updatedCode.js);
+
+    res.status(200).json({ message: "WebSite updated successfully" });
+  } catch (err) {
+    console.error("Background update error:", err.message);
+    res.status(500).json({ error: "Failed to update webSite" });
   }
 });
 
