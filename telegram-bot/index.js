@@ -48,20 +48,22 @@ bot.command("reset", async (ctx) => {
   }
 });
 
-// for GET /preview/:userId api
+// for GET /update-vercel api
 bot.command("preview", async (ctx) => {
-  const userId = ctx.chat.id.toString();
+  const chatId = ctx.chat.id;
+  const userId = ctx.from.id.toString();
 
   try {
-    const res = await axios.get(`${process.env.BASE_URL}/preview/${userId}`);
-    if (res.data.success) {
-      await ctx.reply(`🔗 Website Preview:\n${res.data.url}`);
-    } else {
-      await ctx.reply("❌ Deployment failed.");
-    }
-  } catch (e) {
-    console.error(e);
-    await ctx.reply("❌ Could not generate preview.");
+    // await axios.get(`${process.env.BASE_URL}/update-vercel`); 
+
+    const previewUrl = `https://db-bot-web-preview.vercel.app/${userId}/webSite/index.html`; 
+
+    await ctx.reply(`🔗 [Click here to preview your website](${previewUrl})`, {
+      parse_mode: "Markdown",
+    });
+  } catch (error) {
+    console.error("❌ Preview error:", error.response?.data || error.message);
+    await ctx.reply("⚠️ Failed to generate preview. Please try again.");
   }
 });
 
@@ -70,9 +72,12 @@ bot.command("codefile", async (ctx) => {
   const userId = ctx.chat.id.toString();
 
   try {
-    const fileRes = await axios.get(`${process.env.BASE_URL}/codefile/${userId}`, {
-      responseType: "stream",
-    });
+    const fileRes = await axios.get(
+      `${process.env.BASE_URL}/codefile/${userId}`,
+      {
+        responseType: "stream",
+      }
+    );
 
     const filePath = path.join(tempDir, `webSite-${userId}.zip`);
     const writer = fs.createWriteStream(filePath);
@@ -140,14 +145,18 @@ bot.on("photo", async (ctx) => {
   form.append("text", caption);
 
   try {
-    const uploadRes = await axios.post(`${process.env.BASE_URL}/upload-image/${userId}`, form, {
-      headers: form.getHeaders(),
-    });
+    const uploadRes = await axios.post(
+      `${process.env.BASE_URL}/upload-image/${userId}`,
+      form,
+      {
+        headers: form.getHeaders(),
+      }
+    );
 
     const { images } = uploadRes.data;
-    const messages = images.map(
-      (img) => `🖼 ${img.originalname}\n📌 ${img.aiAnalysis}`
-    ).join("\n\n");
+    const messages = images
+      .map((img) => `🖼 ${img.originalname}\n📌 ${img.aiAnalysis}`)
+      .join("\n\n");
 
     await ctx.reply(`✅ Image analyzed:\n\n${messages}`);
   } catch (err) {

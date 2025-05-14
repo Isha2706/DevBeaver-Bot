@@ -82,6 +82,17 @@ app.get("/preview/:userId", async (req, res) => {
   }
 });
 
+// GET: To call vercel-utils
+app.get('/update-vercel', async (req, res) => {
+  try {
+    await deployToVercel();
+    res.status(200).json({ message: '✅ Vercel deployment triggered successfully.' });
+  } catch (error) {
+    console.error("❌ Error updating Vercel:", error);
+    res.status(500).json({ error: 'Vercel deployment failed.', details: error.message });
+  }
+});
+
 // GET: Code file to user in form of ZIP file
 app.get("/codefile/:userId", async (req, res) => {
   const userId = req.params.userId;
