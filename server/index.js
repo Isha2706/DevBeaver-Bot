@@ -7,6 +7,7 @@ import bodyParser from "body-parser";
 import multer from "multer";
 import cors from "cors";
 import { fileURLToPath } from "url";
+import lockfile from "proper-lockfile";
 
 dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -14,7 +15,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(express.json());
 
-app.use(cors("*"));
+app.use(cors({origin: "*"}));
 app.use(express.json());
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -64,6 +65,122 @@ app.get("/reset", (req, res) => {
   } catch (error) {
     console.error("Reset Error:", error);
     res.status(500).json({ error: "Failed to reset files" });
+  }
+});
+
+// POST: Upload multiple images with a text and analyze using OpenAI
+app.post("/upload-image/:userId", (req, res, next) => {
+  const userId = req.params.userId;
+  req.userId = userId;
+  const uploadsDir = path.join(__dirname, "db", userId, "webSite", "uploads");
+  fs.ensureDirSync(uploadsDir);
+
+  const storage = multer.diskStorage({
+    destination: (_, __, cb) => cb(null, uploadsDir),
+    filename: (_, file, cb) => cb(null, Date.now() + "-" + file.originalname),
+  });
+
+  const upload = multer({ storage }).array("images", 10);
+  upload(req, res, (err) => {
+    if (err) return res.status(500).json({ error: "Upload failed" });
+    next();
+  });
+}, async (req, res) => {
+  const userId = req.userId;
+  const uploadsDir = path.join(__dirname, "db", userId, "webSite", "uploads");
+  const profileFile = path.join(__dirname, "db", userId, "user-data.json");
+  const historyFile = path.join(__dirname, "db", userId, "chat-history.json");
+
+  try {
+    const files = req.files;
+    const userText = req.body.text || "";
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: "No files uploaded" });
+    }
+
+    fs.ensureFileSync(profileFile);
+    fs.ensureFileSync(historyFile);
+
+    const newImagesData = [];
+
+    for (const file of files) {
+      const imagePath = path.join(uploadsDir, file.filename);
+      const ext = path.extname(file.originalname).slice(1);
+
+      const analysis = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are a helpful assistant that describes images.",
+          },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "What kind of image is this and what is its use?" },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/${ext};base64,${fs.readFileSync(imagePath, "base64")}`,
+                },
+              },
+            ],
+          },
+        ],
+        max_tokens: 200,
+      });
+
+      const aiDescription = analysis.choices[0].message.content;
+
+      const imageData = {
+        filename: file.filename,
+        originalname: file.originalname,
+        url: `/webSite/uploads/${file.filename}`,
+        uploadedAt: new Date().toISOString(),
+        description: userText,
+        aiAnalysis: aiDescription,
+      };
+
+      newImagesData.push(imageData);
+    }
+
+    // 🔒 Lock both files
+    await lockfile.lock(profileFile);
+    await lockfile.lock(historyFile);
+
+    try {
+      // Re-read files after locking to avoid stale writes
+      const latestUserProfile = JSON.parse(fs.readFileSync(profileFile, "utf-8") || "{}");
+      const latestChatHistory = JSON.parse(fs.readFileSync(historyFile, "utf-8") || "[]");
+
+      if (!Array.isArray(latestUserProfile.images)) {
+        latestUserProfile.images = [];
+      }
+
+      latestUserProfile.images.push(...newImagesData);
+
+      latestChatHistory.push({
+        user: `Uploaded ${files.length} image(s) with text: "${userText}"`,
+        bot: newImagesData.map(img => `AI Analysis for ${img.originalname}: ${img.aiAnalysis}`).join("\n\n"),
+      });
+
+      fs.writeFileSync(profileFile, JSON.stringify(latestUserProfile, null, 2));
+      fs.writeFileSync(historyFile, JSON.stringify(latestChatHistory, null, 2));
+    } finally {
+      // 🔓 Unlock files
+      await lockfile.unlock(profileFile);
+      await lockfile.unlock(historyFile);
+    }
+
+    res.status(200).json({
+      success: true,
+      images: newImagesData,
+      message: "Images uploaded and analyzed successfully.",
+    });
+  } catch (err) {
+    console.error("Upload Error:", err);
+    res.status(500).json({ error: "Image upload or analysis failed." });
   }
 });
 

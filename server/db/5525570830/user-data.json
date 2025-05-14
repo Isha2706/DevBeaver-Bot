@@ -56,5 +56,23 @@
         "Community Resources: Information on community events."
       ]
     }
-  }
+  },
+  "images": [
+    {
+      "filename": "1747208581676-1747208580924.jpg",
+      "originalname": "1747208580924.jpg",
+      "url": "/webSite/uploads/1747208581676-1747208580924.jpg",
+      "uploadedAt": "2025-05-14T07:43:06.226Z",
+      "description": "",
+      "aiAnalysis": "This image is a cartoon-style illustration of a zebra-like character with glasses working on a laptop. The colorful lines in the background suggest coding or digital work. It is likely used as an avatar, logo, or mascot for a tech or programming-related platform, brand, or community. The playful design can make digital or technical content feel more engaging and approachable."
+    },
+    {
+      "filename": "1747208581383-1747208580546.jpg",
+      "originalname": "1747208580546.jpg",
+      "url": "/webSite/uploads/1747208581383-1747208580546.jpg",
+      "uploadedAt": "2025-05-14T07:43:09.676Z",
+      "description": "test 1",
+      "aiAnalysis": "This is an illustration of a cute cartoon cat dressed in a hoodie and glasses, working on a laptop. It also features a cup of coffee and a smartphone. This kind of image is often used as a sticker or graphic for fun, decorative purposes in digital communication, social media, or for personalizing items like laptops, notebooks, and phone cases. It appeals due to its cute and humorous depiction, often used to convey a lighthearted or relatable message, such as working from home or coding."
+    }
+  ]
 }

@@ -1,0 +1,37 @@
+{
+  "websiteType": "Blog",
+  "topics": "India-Pakistan war",
+  "bloggingStyle": "Mix",
+  "targetAudience": "General readers",
+  "design": {
+    "theme": "Light"
+  },
+  "name": "Isha vlogs",
+  "additionalPages": {
+    "aboutMe": true,
+    "contact": true
+  },
+  "contactDetails": {
+    "email": "company@gmail.com",
+    "phone": "7658769765"
+  },
+  "blogPostSections": [
+    "Blasts in towns",
+    "Kashmir disputes",
+    "Historical context",
+    "Current perspectives",
+    "Timeline of Conflicts",
+    "Major Operations",
+    "Strategic Doctrines",
+    "International Mediation",
+    "Diplomatic Relations",
+    "Propaganda",
+    "Social Media Influence",
+    "Public Sentiment",
+    "Cultural Representations",
+    "Trade and Economy",
+    "Infrastructure and Development",
+    "Diplomatic Efforts",
+    "Track II Diplomacy"
+  ]
+}

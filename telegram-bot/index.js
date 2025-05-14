@@ -1,8 +1,9 @@
 import { Telegraf } from "telegraf";
 import dotenv from "dotenv";
 import fetch from "node-fetch";
-import fs from "fs";
+import fs from "fs-extra";
 import path from "path";
+import axios from "axios";
 import { fileURLToPath } from "url";
 import FormData from "form-data";
 
@@ -11,6 +12,10 @@ dotenv.config();
 // ESM-friendly __dirname
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const bot = new Telegraf(process.env.BOT_TOKEN);
+
+// Temp folder to save Telegram image before upload
+const tempDir = path.join(__dirname, "temp");
+fs.ensureDirSync(tempDir);
 
 // Telegram Bot UserName = a_i_web_bot BotName = SiteBuilder Bot
 bot.start((ctx) => {
@@ -67,6 +72,51 @@ bot.command("generate", async (ctx) => {
     console.error("Telegram Bot Error:", err.message);
     await ctx.reply("❌ An error occurred while generating your website.");
   }
+});
+
+// for POST /upload-image/:userId api
+bot.on("photo", async (ctx) => {
+  const userId = ctx.chat.id.toString();
+  const caption = ctx.message.caption || "";
+
+  const photo = ctx.message.photo[ctx.message.photo.length - 1];
+  const fileId = photo.file_id;
+
+  const fileLink = await ctx.telegram.getFileLink(fileId);
+  const fileName = `${Date.now()}.jpg`;
+  const filePath = path.join(tempDir, fileName);
+
+  const writer = fs.createWriteStream(filePath);
+  const response = await axios({ url: fileLink.href, responseType: "stream" });
+  response.data.pipe(writer);
+
+  await new Promise((resolve, reject) => {
+    writer.on("finish", resolve);
+    writer.on("error", reject);
+  });
+
+  // Send to backend
+  const form = new FormData();
+  form.append("images", fs.createReadStream(filePath));
+  form.append("text", caption);
+
+  try {
+    const uploadRes = await axios.post(`${process.env.BASE_URL}/upload-image/${userId}`, form, {
+      headers: form.getHeaders(),
+    });
+
+    const { images } = uploadRes.data;
+    const messages = images.map(
+      (img) => `🖼 ${img.originalname}\n📌 ${img.aiAnalysis}`
+    ).join("\n\n");
+
+    await ctx.reply(`✅ Image analyzed:\n\n${messages}`);
+  } catch (err) {
+    console.error("Upload error:", err.message);
+    await ctx.reply("❌ Failed to upload or analyze image.");
+  }
+
+  fs.removeSync(filePath); // Clean up
 });
 
 // for POST /chat api
