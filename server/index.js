@@ -8,6 +8,8 @@ import multer from "multer";
 import cors from "cors";
 import { fileURLToPath } from "url";
 import lockfile from "proper-lockfile";
+import { deployToVercel } from "./vercel-utils.js";
+import archiver from "archiver";
 
 dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -66,6 +68,36 @@ app.get("/reset", (req, res) => {
     console.error("Reset Error:", error);
     res.status(500).json({ error: "Failed to reset files" });
   }
+});
+
+// GET: Preview webSite
+app.get("/preview/:userId", async (req, res) => {
+  const userId = req.params.userId;
+  const url = await deployToVercel(userId);
+
+  if (url) {
+    res.status(200).json({ success: true, url });
+  } else {
+    res.status(500).json({ error: "Deployment failed" });
+  }
+});
+
+// GET: Code file to user in form of ZIP file
+app.get("/codefile/:userId", async (req, res) => {
+  const userId = req.params.userId;
+  const folderPath = path.join(__dirname, "db", userId, "webSite");
+
+  const zipPath = path.join(__dirname, "db", userId, "webSite.zip");
+  const output = fs.createWriteStream(zipPath);
+  const archive = archiver("zip", { zlib: { level: 9 } });
+
+  archive.pipe(output);
+  archive.directory(folderPath, false);
+  await archive.finalize();
+
+  output.on("close", () => {
+    res.download(zipPath);
+  });
 });
 
 // POST: Upload multiple images with a text and analyze using OpenAI
@@ -145,7 +177,7 @@ app.post("/upload-image/:userId", (req, res, next) => {
       newImagesData.push(imageData);
     }
 
-    // 🔒 Lock both files
+    // Lock both files
     await lockfile.lock(profileFile);
     await lockfile.lock(historyFile);
 

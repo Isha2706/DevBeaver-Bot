@@ -11,8 +11,10 @@
   "type": "module",
   "description": "",
   "dependencies": {
+    "archiver": "^7.0.1",
     "axios": "^1.9.0",
     "body-parser": "^2.2.0",
+    "child_process": "^1.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
@@ -25,6 +27,7 @@
     "path": "^0.12.7",
     "proper-lockfile": "^4.1.2",
     "telegraf": "^4.16.3",
-    "url": "^0.11.4"
+    "url": "^0.11.4",
+    "util": "^0.12.5"
   }
 }

@@ -48,6 +48,45 @@ bot.command("reset", async (ctx) => {
   }
 });
 
+// for GET /preview/:userId api
+bot.command("preview", async (ctx) => {
+  const userId = ctx.chat.id.toString();
+
+  try {
+    const res = await axios.get(`${process.env.BASE_URL}/preview/${userId}`);
+    if (res.data.success) {
+      await ctx.reply(`🔗 Website Preview:\n${res.data.url}`);
+    } else {
+      await ctx.reply("❌ Deployment failed.");
+    }
+  } catch (e) {
+    console.error(e);
+    await ctx.reply("❌ Could not generate preview.");
+  }
+});
+
+// for GET /codefile/:userId api
+bot.command("codefile", async (ctx) => {
+  const userId = ctx.chat.id.toString();
+
+  try {
+    const fileRes = await axios.get(`${process.env.BASE_URL}/codefile/${userId}`, {
+      responseType: "stream",
+    });
+
+    const filePath = path.join(tempDir, `webSite-${userId}.zip`);
+    const writer = fs.createWriteStream(filePath);
+    fileRes.data.pipe(writer);
+
+    await new Promise((resolve) => writer.on("finish", resolve));
+    await ctx.replyWithDocument({ source: filePath, filename: "website.zip" });
+    fs.removeSync(filePath);
+  } catch (e) {
+    console.error(e);
+    await ctx.reply("❌ Failed to download ZIP.");
+  }
+});
+
 // for POST /promptbackground api
 bot.command("generate", async (ctx) => {
   const userId = ctx.chat.id.toString(); // Use chat ID as userId
