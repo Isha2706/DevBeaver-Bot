@@ -1,4 +1,4 @@
-import { Telegraf } from "telegraf";
+import { Telegraf, Markup } from "telegraf";
 import dotenv from "dotenv";
 import fetch from "node-fetch";
 import fs from "fs-extra";
@@ -33,6 +33,24 @@ bot.start((ctx) => {
 
   ctx.reply("Welcome! Send me a message to begin. Start with writting 'Hi'.");
 });
+
+// Menu command with inline keyboard
+bot.command('menu', (ctx) => {
+  ctx.reply('📋 Choose a command:', Markup.inlineKeyboard([
+    [Markup.button.callback('📋 Reset', 'CMD_RESET')],
+    [Markup.button.callback('🔄 Generate Website', 'CMD_GENERATE')],
+    [Markup.button.callback('👁️ Preview', 'CMD_PREVIEW')],
+    [Markup.button.callback('💻 View Code', 'CMD_CODE')],
+    [Markup.button.callback('🆘 Help', 'CMD_HELP')],
+  ]));
+});
+
+// Handle callbacks
+bot.action('CMD_RESET', (ctx) => ctx.reply('Running /reset...'));
+bot.action('CMD_GENERATE', (ctx) => ctx.reply('Running /generate...'));
+bot.action('CMD_PREVIEW', (ctx) => ctx.reply('Running /preview...'));
+bot.action('CMD_CODE', (ctx) => ctx.reply('Running /codefile...'));
+bot.action('CMD_HELP', (ctx) => ctx.reply('Running /help...'));
 
 // /help command
 bot.command('help', (ctx) => {
