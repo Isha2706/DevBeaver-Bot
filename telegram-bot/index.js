@@ -17,6 +17,15 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 const tempDir = path.join(__dirname, "temp");
 fs.ensureDirSync(tempDir);
 
+bot.telegram.setMyCommands([
+  { command: '/start', description: 'Start interacting with the bot' },
+  { command: '/help', description: 'Show available commands' },
+  { command: '/generate', description: 'Generate the website' },
+  { command: '/preview', description: 'Preview the website' },
+  { command: '/code', description: 'View source code of the website' },
+  { command: '/reset', description: 'To erase previous data of Website' },
+]);
+
 // Telegram Bot UserName = a_i_web_bot BotName = SiteBuilder Bot
 bot.start((ctx) => {
   // console.log("ctx:", ctx);
