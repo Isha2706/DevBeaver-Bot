@@ -19,10 +19,27 @@ fs.ensureDirSync(tempDir);
 
 // Telegram Bot UserName = a_i_web_bot BotName = SiteBuilder Bot
 bot.start((ctx) => {
-  console.log("ctx:", ctx);
+  // console.log("ctx:", ctx);
   console.log("welcome");
 
-  ctx.reply("Welcome! Send me a message to begin.");
+  ctx.reply("Welcome! Send me a message to begin. Start with writting 'Hi'.");
+});
+
+// /help command
+bot.command('help', (ctx) => {
+  const helpText = `
+📖 *Available Commands:*
+
+/start - Start the bot and see welcome message
+/help - Show this help menu
+/update - Update your website background using chat history and profile
+/preview - Preview the current website
+/code - View the source code of the website
+/profile - Show your current profile data
+
+Use these commands to interact with the bot and update your site easily.
+  `;
+  ctx.reply(helpText);
 });
 
 // for POST /reset api
@@ -54,7 +71,7 @@ bot.command("preview", async (ctx) => {
   const userId = ctx.from.id.toString();
 
   try {
-    // await axios.get(`${process.env.BASE_URL}/update-vercel`); 
+    await axios.get(`${process.env.BASE_URL}/update-vercel`); 
 
     const previewUrl = `https://db-bot-web-preview.vercel.app/${userId}/webSite/index.html`; 
 
@@ -62,7 +79,7 @@ bot.command("preview", async (ctx) => {
       parse_mode: "Markdown",
     });
   } catch (error) {
-    console.error("❌ Preview error:", error.response?.data || error.message);
+    console.error("❌ Preview error:", error.response?.data || error);
     await ctx.reply("⚠️ Failed to generate preview. Please try again.");
   }
 });
@@ -117,7 +134,7 @@ bot.command("generate", async (ctx) => {
     await ctx.reply("❌ An error occurred while generating your website.");
   }
 });
-
+ 
 // for POST /upload-image/:userId api
 bot.on("photo", async (ctx) => {
   const userId = ctx.chat.id.toString();
