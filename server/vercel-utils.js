@@ -1,36 +1,61 @@
-import simpleGit from 'simple-git';
-import path from 'path';
-import fs from 'fs-extra';
+import { exec } from "child_process";
+import path from "path";
+import fs from "fs-extra";
 
-const dbFolderPath = path.join(process.cwd(), 'server', 'db');
+const dbFolderPath = path.join(process.cwd(), "db");
+
+function runCommand(command, cwd) {
+  return new Promise((resolve, reject) => {
+    exec(command, { cwd, shell: true }, (error, stdout, stderr) => {
+      if (error) {
+        return reject({
+          success: false,
+          command,
+          stdout,
+          stderr,
+          error: error.message,
+        });
+      }
+      resolve({ stdout: stdout.trim(), stderr: stderr.trim() });
+    });
+  });
+}
 
 export async function deployToVercel() {
-  if (!fs.existsSync(dbFolderPath)) {
-    throw new Error(`❌ DB folder does not exist at path: ${dbFolderPath}`);
-  }
-
-  const git = simpleGit(dbFolderPath);
-
   try {
-    const isRepo = await git.checkIsRepo();
+    if (!fs.existsSync(dbFolderPath)) {
+      throw new Error(`❌ db folder not found at ${dbFolderPath}`);
+    }
+
+    console.log("📁 Using DB folder path:", dbFolderPath);
+
+    const isRepo = fs.existsSync(path.join(dbFolderPath, ".git"));
     if (!isRepo) {
-      throw new Error("❌ The db folder is not a Git repository. Please run: git init && git remote add origin <your-repo-url>");
+      throw new Error("❌ The db folder is not a git repository.");
     }
 
-    await git.add('./*');
+    const remote = await runCommand('git remote -v', dbFolderPath);
+    console.log("🌐 Git Remote Info:\n", remote.stdout);
 
-    const status = await git.status();
-    if (status.files.length === 0) {
-      console.log("✅ No changes to commit.");
-      return;
+    const status = await runCommand('git status --porcelain', dbFolderPath);
+    console.log("📋 Git Status Output:\n", status.stdout);
+
+    if (!status.stdout) {
+      return "⚠️ No changes detected. Nothing to commit.";
     }
 
-    await git.commit(`Update: Auto commit at ${new Date().toISOString()}`);
-    await git.push();
+    await runCommand('git add .', dbFolderPath);
+    await runCommand(`git commit -m "Auto update on ${new Date().toISOString()}"`, dbFolderPath);
+    await runCommand('git pull --rebase', dbFolderPath);
+    const push = await runCommand('git push', dbFolderPath);
 
-    console.log("✅ Changes pushed to GitHub. Vercel will auto-deploy.");
+    return `✅ Git Push Output:\n${push.stdout || '(No stdout)'}\n\n⚠️ Git Warnings or Errors:\n${push.stderr || '(No stderr)'}`;
   } catch (err) {
-    console.error("❌ Failed to deploy to Vercel:", err.message);
-    throw err;
+    console.error("❌ Git update failed:\n", err);
+    if (err.command) {
+      return `❌ Error running command: ${err.command}\nstdout: ${err.stdout}\nstderr: ${err.stderr}\nerror: ${err.error}`;
+    }
+    return `❌ ${err.message}`;
   }
 }
+
