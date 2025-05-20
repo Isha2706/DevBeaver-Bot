@@ -85,7 +85,9 @@ app.get("/preview/:userId", async (req, res) => {
 // GET: To call vercel-utils
 app.get('/update-vercel', async (req, res) => {
   try {
-    await deployToVercel();
+    const values = await deployToVercel();
+    console.log("Return value:", values);
+    
     res.status(200).json({ message: '✅ Vercel deployment triggered successfully.' });
   } catch (error) {
     console.error("❌ Error updating Vercel:", error);
@@ -179,7 +181,7 @@ app.post("/upload-image/:userId", (req, res, next) => {
       const imageData = {
         filename: file.filename,
         originalname: file.originalname,
-        url: `/webSite/uploads/${file.filename}`,
+        url: `/uploads/${file.filename}`,
         uploadedAt: new Date().toISOString(),
         description: userText,
         aiAnalysis: aiDescription,
@@ -211,7 +213,7 @@ app.post("/upload-image/:userId", (req, res, next) => {
       fs.writeFileSync(profileFile, JSON.stringify(latestUserProfile, null, 2));
       fs.writeFileSync(historyFile, JSON.stringify(latestChatHistory, null, 2));
     } finally {
-      // 🔓 Unlock files
+      // Unlock files
       await lockfile.unlock(profileFile);
       await lockfile.unlock(historyFile);
     }
@@ -259,37 +261,62 @@ app.post("/promptBackground", async (req, res) => {
     };
 
     const systemPromptBackground = `
-You are a full-stack AI developer. Create a dynamic, multi-page website using only one HTML file, one CSS file, and one JavaScript file...
-
-[... same as your prompt, unchanged ...]
-
+You are a full-stack AI developer. Create a dynamic, multi-page website using only one HTML file, one CSS file, and one JavaScript file. The website must be fully functional and styled using CSS. JavaScript should handle all interactivity and dynamic behavior.
+where on clicking at navbar 'a' elements it only show there section only.
+Here is the user's desired website information:
 ${JSON.stringify(userProfile, null, 2)}
 ${JSON.stringify(chatHistory, null, 2)}
 
 Here is the current website code:
-HTML: ${websiteCode.html}
-CSS: ${websiteCode.css}
-JS: ${websiteCode.js}
+HTML:
+${websiteCode.html}
+
+CSS:
+${websiteCode.css}
+
+JS:
+${websiteCode.js}
+
+Your task:
+- Update the HTML, CSS, and JS files to reflect the user's website preferences.
+- Include all required pages and sections if listed.
+- Insert placeholders like <span id="goal"> or <div id="about-section">.
+- In script.js, fetch "/profile", "/history" and multiple pages website populate the HTML.
+- Make the site responsive and visually appealing.
+- By clicking the navbar "a" elements and buttons in open that particular section of code only.
+- Generate the dummy data in website according user need.
+- Use clean and modern design, respecting colorScheme, theme, etc.
 
 Respond ONLY in this JSON format:
-{
-  "updatedUserProfile": { ... },
-  "updatedCode": {
+{"updatedCode": {
     "html": "string",
     "css": "string",
     "js": "string"
   }
-}
-`;
+}`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [{ role: "system", content: systemPromptBackground }],
+      messages: [{ 
+        role: "system", 
+        content: systemPromptBackground, 
+        text: { 
+          format: {
+            updatedCode: {html: "string", css: "string", js: "string"}
+          }
+        }
+      }],
     });
 
-    const parsed = JSON.parse(response.choices[0].message.content);
+    let parsed;
+    try {
+      parsed = JSON.parse(response.choices[0].message.content);
+    } catch (jsonErr) {
+      console.error("❌ Failed to parse OpenAI response as JSON. Content was:", response.choices[0].message.content);
+      return res.status(500).json({ error: "OpenAI response is not valid JSON", details: jsonErr.message });
+    }
 
-    // Save new data
+    // Now safe to use parsed object
     fs.writeFileSync(profileFile, JSON.stringify(parsed.updatedUserProfile, null, 2));
     fs.writeFileSync(path.join(websiteDir, "index.html"), parsed.updatedCode.html);
     fs.writeFileSync(path.join(websiteDir, "styles.css"), parsed.updatedCode.css);
@@ -297,7 +324,7 @@ Respond ONLY in this JSON format:
 
     res.status(200).json({ message: "WebSite updated successfully" });
   } catch (err) {
-    console.error("Background update error:", err.message);
+    console.error("Background update error:", err);
     res.status(500).json({ error: "Failed to update webSite" });
   }
 });
@@ -329,9 +356,7 @@ app.post("/chat", async (req, res) => {
       )
       .join("\n");
 
-    const promptQuick = `
-You are a helpful assistant that talks to users to understand and build their ideal website.
-
+    const promptQuick = `You are a helpful assistant that talks in friendly way with users to understand and build their ideal website.
 Here is the existing chat history:
 ${formattedConversation}
 
