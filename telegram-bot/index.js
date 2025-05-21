@@ -18,12 +18,12 @@ const tempDir = path.join(__dirname, "temp");
 fs.ensureDirSync(tempDir);
 
 bot.telegram.setMyCommands([
-  { command: '/start', description: 'Start interacting with the bot' },
-  { command: '/help', description: 'Show available commands' },
-  { command: '/generate', description: 'Generate the website' },
-  { command: '/preview', description: 'Preview the website' },
-  { command: '/code', description: 'View source code of the website' },
-  { command: '/reset', description: 'To erase previous data of Website' },
+  { command: "/start", description: "Start interacting with the bot" },
+  { command: "/help", description: "Show available commands" },
+  { command: "/generate", description: "Generate the website" },
+  { command: "/preview", description: "Preview the website" },
+  { command: "/code", description: "View source code of the website" },
+  { command: "/reset", description: "To erase previous data of Website" },
 ]);
 
 // Telegram Bot UserName = a_i_web_bot BotName = SiteBuilder Bot
@@ -35,38 +35,71 @@ bot.start((ctx) => {
 });
 
 // Menu command with inline keyboard
-bot.command('menu', (ctx) => {
-  ctx.reply('📋 Choose a command:', Markup.inlineKeyboard([
-    [Markup.button.callback('📋 Reset', 'CMD_RESET')],
-    [Markup.button.callback('🔄 Generate Website', 'CMD_GENERATE')],
-    [Markup.button.callback('👁️ Preview', 'CMD_PREVIEW')],
-    [Markup.button.callback('💻 View Code', 'CMD_CODE')],
-    [Markup.button.callback('🆘 Help', 'CMD_HELP')],
-  ]));
+bot.command("menu", (ctx) => {
+  ctx.reply(
+    "📋 Choose a command:",
+    Markup.inlineKeyboard([
+      [Markup.button.callback("📋 Reset", "CMD_RESET")],
+      [Markup.button.callback("🔄 Generate Website", "CMD_GENERATE")],
+      [Markup.button.callback("👁️ Preview", "CMD_PREVIEW")],
+      [Markup.button.callback("💻 View Code", "CMD_CODE")],
+      [Markup.button.callback("🆘 Help", "CMD_HELP")],
+    ])
+  );
 });
 
 // Handle callbacks
-bot.action('CMD_RESET', (ctx) => ctx.reply('Running /reset...'));
-bot.action('CMD_GENERATE', (ctx) => ctx.reply('Running /generate...'));
-bot.action('CMD_PREVIEW', (ctx) => ctx.reply('Running /preview...'));
-bot.action('CMD_CODE', (ctx) => ctx.reply('Running /codefile...'));
-bot.action('CMD_HELP', (ctx) => ctx.reply('Running /help...'));
+bot.action("CMD_RESET", async (ctx) => {
+  await ctx.answerCbQuery(); // Clear loading
+  await ctx.deleteMessage(); // Optional: remove menu message
+  // Call your actual /reset logic here
+  ctx.reply("♻️ Data has been reset. You can start fresh!");
+});
+
+bot.action("CMD_GENERATE", async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.deleteMessage();
+  // Replace this with your actual generate logic
+  ctx.reply("✅ Website generated successfully!\n\n👀 Use /preview to view it.");
+});
+
+bot.action("CMD_PREVIEW", async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.deleteMessage();
+  ctx.reply("📄 Here's a preview of your website...");
+  // Your preview logic here
+});
+
+bot.action("CMD_CODE", async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.deleteMessage();
+  ctx.reply("💻 Here is your website's source code...");
+  // Your code viewing logic here
+});
+
+bot.action("CMD_HELP", async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.deleteMessage();
+  // Ideally re-use your /help content
+  ctx.reply("ℹ️ Help Menu:\n\n/start - Start the bot\n/help - Show help...\n...");
+});
 
 // /help command
-bot.command('help', (ctx) => {
+bot.command("help", (ctx) => {
   const helpText = `
 📖 *Available Commands:*
 
 /start - Start the bot and see welcome message
 /help - Show this help menu
-/update - Update your website background using chat history and profile
+/menu - Show the all commands Buttons
+/reset - To Remove all data of previous website
+/generate - Generate your website with current data
 /preview - Preview the current website
 /code - View the source code of the website
-/profile - Show your current profile data
 
 Use these commands to interact with the bot and update your site easily.
   `;
-  ctx.reply(helpText);
+  ctx.reply(helpText, { parse_mode: "Markdown" });
 });
 
 // for POST /reset api
@@ -81,7 +114,7 @@ bot.command("reset", async (ctx) => {
 
     if (response.ok) {
       await ctx.reply(
-        "✅ Your data has been reset successfully. Let's start fresh!"
+        "♻️ Your data has been reset successfully. Let's start fresh!"
       );
     } else {
       await ctx.reply(`⚠️ Failed to reset: ${data.error}`);
@@ -92,15 +125,15 @@ bot.command("reset", async (ctx) => {
   }
 });
 
-// for GET /update-vercel api
+// for GET /update-git api
 bot.command("preview", async (ctx) => {
   const chatId = ctx.chat.id;
   const userId = ctx.from.id.toString();
 
   try {
-    await axios.get(`${process.env.BASE_URL}/update-vercel`); 
+    await axios.get(`${process.env.BASE_URL}/update-git`);
 
-    const previewUrl = `https://db-bot-web-preview.vercel.app/${userId}/webSite/index.html`; 
+    const previewUrl = `https://db-bot-web-preview.vercel.app/${userId}/webSite/index.html`;
 
     await ctx.reply(`🔗 [Click here to preview your website](${previewUrl})`, {
       parse_mode: "Markdown",
@@ -111,17 +144,14 @@ bot.command("preview", async (ctx) => {
   }
 });
 
-// for GET /codefile/:userId api
-bot.command("codefile", async (ctx) => {
+// for GET /code/:userId api
+bot.command("code", async (ctx) => {
   const userId = ctx.chat.id.toString();
 
   try {
-    const fileRes = await axios.get(
-      `${process.env.BASE_URL}/codefile/${userId}`,
-      {
-        responseType: "stream",
-      }
-    );
+    const fileRes = await axios.get(`${process.env.BASE_URL}/code/${userId}`, {
+      responseType: "stream",
+    });
 
     const filePath = path.join(tempDir, `webSite-${userId}.zip`);
     const writer = fs.createWriteStream(filePath);
@@ -152,7 +182,9 @@ bot.command("generate", async (ctx) => {
     const data = await response.json();
 
     if (response.ok) {
-      await ctx.reply("✅ Website generated successfully!");
+      await ctx.reply(
+        "✅ Website generated successfully!\n\n👀 Now it's time to preview your site!\nJust type or click 🔍 /preview to see how it looks."
+      );
     } else {
       await ctx.reply(`❌ Failed to generate: ${data.error}`);
     }
@@ -161,7 +193,7 @@ bot.command("generate", async (ctx) => {
     await ctx.reply("❌ An error occurred while generating your website.");
   }
 });
- 
+
 // for POST /upload-image/:userId api
 bot.on("photo", async (ctx) => {
   const userId = ctx.chat.id.toString();
