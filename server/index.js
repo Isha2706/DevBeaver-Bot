@@ -8,7 +8,7 @@ import multer from "multer";
 import cors from "cors";
 import { fileURLToPath } from "url";
 import lockfile from "proper-lockfile";
-import { deployToVercel } from "./vercel-utils.js";
+import { deployToGit } from "./deploy-git.js";
 import archiver from "archiver";
 
 dotenv.config();
@@ -87,7 +87,7 @@ app.get("/reset", (req, res) => {
 // GET: Preview webSite
 app.get("/preview/:userId", async (req, res) => {
   const userId = req.params.userId;
-  const url = await deployToVercel(userId);
+  const url = await deployToGit(userId);
 
   if (url) {
     res.status(200).json({ success: true, url });
@@ -99,7 +99,7 @@ app.get("/preview/:userId", async (req, res) => {
 // GET: To call vercel-utils
 app.get('/update-vercel', async (req, res) => {
   try {
-    const values = await deployToVercel();
+    const values = await deployToGit();
     console.log("Return value:", values);
     
     res.status(200).json({ message: '✅ Vercel deployment triggered successfully.' });
