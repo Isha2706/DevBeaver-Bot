@@ -84,20 +84,8 @@ app.get("/reset", (req, res) => {
   }
 });
 
-// GET: Preview webSite
-app.get("/preview/:userId", async (req, res) => {
-  const userId = req.params.userId;
-  const url = await deployToGit(userId);
-
-  if (url) {
-    res.status(200).json({ success: true, url });
-  } else {
-    res.status(500).json({ error: "Deployment failed" });
-  }
-});
-
-// GET: To call vercel-utils
-app.get('/update-vercel', async (req, res) => {
+// GET: To call deploy-git.js
+app.get('/update-git', async (req, res) => {
   try {
     const values = await deployToGit();
     console.log("Return value:", values);
