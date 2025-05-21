@@ -25,7 +25,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 app.use(bodyParser.json());
 
 // GET: Reset profile and history for a specific user
-app.get("/reset", (req, res) => {
+app.get("/reset", async(req, res) => {
   const userId = req.query.userId;
 
   if (!userId) {
@@ -76,6 +76,9 @@ app.get("/reset", (req, res) => {
 
     // Remove all files from uploads directory
     fs.emptyDirSync(uploadsDir);
+
+    const values = await deployToGit();
+    console.log("In Reset api Return value:", values);
 
     res.status(200).json({ message: `Reset successful for user: ${userId}` });
   } catch (error) {
