@@ -35,6 +35,8 @@ app.get("/reset", (req, res) => {
   const userDir = path.join("db", userId);
   const historyFile = path.join(userDir, "chat-history.json");
   const profileFile = path.join(userDir, "user-data.json");
+  const websiteDir = path.join(userDir, "webSite");
+  const uploadsDir = path.join(websiteDir, "uploads");
 
   const defaultProfile = {
     websiteType: "",
@@ -58,10 +60,22 @@ app.get("/reset", (req, res) => {
   };
 
   try {
-    if (!fs.existsSync(userDir)) fs.mkdirSync(userDir, { recursive: true });
+    // Ensure base folders exist
+    fs.ensureDirSync(userDir);
+    fs.ensureDirSync(websiteDir);
+    fs.ensureDirSync(uploadsDir);
 
+    // Reset chat history and profile
     fs.writeFileSync(historyFile, `[]`);
     fs.writeFileSync(profileFile, JSON.stringify(defaultProfile, null, 2));
+
+    // Clear HTML/CSS/JS files
+    fs.writeFileSync(path.join(websiteDir, "index.html"), "<!-- empty -->");
+    fs.writeFileSync(path.join(websiteDir, "styles.css"), "/* empty */");
+    fs.writeFileSync(path.join(websiteDir, "script.js"), "// empty");
+
+    // Remove all files from uploads directory
+    fs.emptyDirSync(uploadsDir);
 
     res.status(200).json({ message: `Reset successful for user: ${userId}` });
   } catch (error) {
@@ -96,7 +110,7 @@ app.get('/update-vercel', async (req, res) => {
 });
 
 // GET: Code file to user in form of ZIP file
-app.get("/codefile/:userId", async (req, res) => {
+app.get("/code/:userId", async (req, res) => {
   const userId = req.params.userId;
   const folderPath = path.join(__dirname, "db", userId, "webSite");
 
@@ -317,7 +331,7 @@ Respond ONLY in this JSON format:
     }
 
     // Now safe to use parsed object
-    fs.writeFileSync(profileFile, JSON.stringify(parsed.updatedUserProfile, null, 2));
+    // fs.writeFileSync(profileFile, JSON.stringify(parsed.updatedUserProfile, null, 2));
     fs.writeFileSync(path.join(websiteDir, "index.html"), parsed.updatedCode.html);
     fs.writeFileSync(path.join(websiteDir, "styles.css"), parsed.updatedCode.css);
     fs.writeFileSync(path.join(websiteDir, "script.js"), parsed.updatedCode.js);
