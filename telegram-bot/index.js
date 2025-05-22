@@ -28,76 +28,113 @@ bot.telegram.setMyCommands([
 
 // Telegram Bot UserName = a_i_web_bot BotName = SiteBuilder Bot
 bot.start((ctx) => {
-  // console.log("ctx:", ctx);
   console.log("welcome");
 
-  ctx.reply("Welcome! Send me a message to begin. Start with writting 'Hi'.");
+  const welcomeMessage = `
+👋 *Welcome to the Website Wizard Bot!*
+
+I'm here to help you create a stunning multi-page website step-by-step. ✨
+
+Here’s what you can do next:
+
+🟢 Say *Hi* to start the conversation  
+📋 Use /menu to explore all available actions  
+💡 Use /help anytime for guidance
+
+Let’s build something amazing together! 🚀
+  `;
+
+  ctx.reply(welcomeMessage, { parse_mode: "Markdown" });
 });
 
 // Menu command with inline keyboard
 bot.command("menu", (ctx) => {
   ctx.reply(
-    "📋 Choose a command:",
-    Markup.inlineKeyboard([
-      [Markup.button.callback("📋 Reset", "CMD_RESET")],
-      [Markup.button.callback("🔄 Generate Website", "CMD_GENERATE")],
-      [Markup.button.callback("👁️ Preview", "CMD_PREVIEW")],
-      [Markup.button.callback("💻 View Code", "CMD_CODE")],
-      [Markup.button.callback("🆘 Help", "CMD_HELP")],
-    ])
+    "📋 *Main Menu*\n\nSelect one of the options below to get started:",
+    {
+      parse_mode: "Markdown",
+      ... Markup.inlineKeyboard([
+        [
+          Markup.button.callback("📋 Reset", "CMD_RESET"),
+          Markup.button.callback("🆘 Help", "CMD_HELP"),
+        ],
+        [
+          Markup.button.callback("👁️ Preview", "CMD_PREVIEW"),
+          Markup.button.callback("💻 View Code", "CMD_CODE"),
+        ],
+        [Markup.button.callback("🔄 Generate Website", "CMD_GENERATE")],
+      ]),
+    }
   );
 });
 
 // Handle callbacks
 bot.action("CMD_RESET", async (ctx) => {
-  await ctx.answerCbQuery(); // Clear loading
-  await ctx.deleteMessage(); // Optional: remove menu message
-  // Call your actual /reset logic here
-  ctx.reply("♻️ Data has been reset. You can start fresh!");
+  await ctx.answerCbQuery();
+  await ctx.reply(
+    "♻️ *Reset Command*\n\nClick /reset to clear your current data and start fresh! ✨",
+    { parse_mode: "Markdown" }
+  );
 });
 
 bot.action("CMD_GENERATE", async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.deleteMessage();
-  // Replace this with your actual generate logic
-  ctx.reply("✅ Website generated successfully!\n\n👀 Use /preview to view it.");
+  await ctx.reply(
+    "🛠️ *Generate Website*\n\nClick /generate to create your awesome multi-page website! 🚀",
+    { parse_mode: "Markdown" }
+  );
 });
 
 bot.action("CMD_PREVIEW", async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.deleteMessage();
-  ctx.reply("📄 Here's a preview of your website...");
-  // Your preview logic here
+  await ctx.reply(
+    "👁️ *Preview Website*\n\nUse /preview to see how your website looks! 🌐",
+    { parse_mode: "Markdown" }
+  );
 });
 
 bot.action("CMD_CODE", async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.deleteMessage();
-  ctx.reply("💻 Here is your website's source code...");
-  // Your code viewing logic here
+  await ctx.reply(
+    "💻 *View Source Code*\n\nClick /code to get the full source code of your generated site. 📂",
+    { parse_mode: "Markdown" }
+  );
 });
 
 bot.action("CMD_HELP", async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.deleteMessage();
-  // Ideally re-use your /help content
-  ctx.reply("ℹ️ Help Menu:\n\n/start - Start the bot\n/help - Show help...\n...");
+  await ctx.reply(
+    "🆘 *Help Menu*\n\nNeed assistance? Click /help to learn about all available commands and how to use the bot. 🤖",
+    { parse_mode: "Markdown" }
+  );
 });
 
 // /help command
 bot.command("help", (ctx) => {
   const helpText = `
-📖 *Available Commands:*
+🙋‍♂️ *Need Help? I’ve got you covered!*
 
-/start - Start the bot and see welcome message
-/help - Show this help menu
-/menu - Show the all commands Buttons
-/reset - To Remove all data of previous website
-/generate - Generate your website with current data
-/preview - Preview the current website
-/code - View the source code of the website
+Here’s a list of all the available commands you can use to interact with me:
 
-Use these commands to interact with the bot and update your site easily.
+🔹 /start – _Kick things off with a welcome message!_
+
+🔹 /help – _You're here! Shows this help guide._
+
+🔹 /menu – _Get all options in a neat button layout!_
+
+🔄 /reset – _Clear all previous data and start fresh._
+
+🚀 /generate – _Generate your website with current information._
+
+👁️ /preview – _See a live preview of your generated site._
+
+💻 /code – _View the source code of your website._
+
+---
+
+🛠 *Tip:* Use /menu for the easiest navigation with buttons!
+
+If you need more help, feel free to ask. I'm here to assist! 😊
   `;
   ctx.reply(helpText, { parse_mode: "Markdown" });
 });
@@ -133,7 +170,7 @@ bot.command("preview", async (ctx) => {
   try {
     await axios.get(`${process.env.BASE_URL}/update-git`);
 
-    const previewUrl = `https://db-bot-web-preview.vercel.app/${userId}/webSite/index.html`;
+    const previewUrl = `https://db-bot-web-preview.vercel.app/${userId}/webSite/`;
 
     await ctx.reply(`🔗 [Click here to preview your website](${previewUrl})`, {
       parse_mode: "Markdown",
