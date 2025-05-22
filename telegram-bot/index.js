@@ -17,6 +17,7 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 const tempDir = path.join(__dirname, "temp");
 fs.ensureDirSync(tempDir);
 
+// For Menu Btn
 bot.telegram.setMyCommands([
   { command: "/start", description: "Start interacting with the bot" },
   { command: "/help", description: "Show available commands" },
