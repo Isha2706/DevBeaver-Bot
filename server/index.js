@@ -159,7 +159,7 @@ app.post("/upload-image/:userId", (req, res, next) => {
       const ext = path.extname(file.originalname).slice(1);
 
       const analysis = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -186,7 +186,7 @@ app.post("/upload-image/:userId", (req, res, next) => {
       const imageData = {
         filename: file.filename,
         originalname: file.originalname,
-        url: `/uploads/${file.filename}`,
+        url: `uploads/${file.filename}`,
         uploadedAt: new Date().toISOString(),
         description: userText,
         aiAnalysis: aiDescription,
@@ -252,7 +252,6 @@ app.post("/promptBackground", async (req, res) => {
     const userProfile = JSON.parse(fs.readFileSync(profileFile, "utf-8"));
     const chatHistory = JSON.parse(fs.readFileSync(historyFile, "utf-8"));
 
-    // Existing or default blank code
     const websiteCode = {
       html: fs.existsSync(path.join(websiteDir, "index.html"))
         ? fs.readFileSync(path.join(websiteDir, "index.html"), "utf-8")
@@ -266,10 +265,12 @@ app.post("/promptBackground", async (req, res) => {
     };
 
     const systemPromptBackground = `
-You are a full-stack AI developer. Create a dynamic, multi-page website using only one HTML file, one CSS file, and one JavaScript file. The website must be fully functional and styled using CSS. JavaScript should handle all interactivity and dynamic behavior.
-where on clicking at navbar 'a' elements it only show there section only.
+You are a full-stack AI developer. Create a **dynamic, multi-page-like website** using **a single HTML file**, **one CSS file**, and **one JS file**. Do not split into separate HTML pages. Instead, use JavaScript to simulate multi-page behavior by hiding and showing sections on navbar link click.
+
 Here is the user's desired website information:
 ${JSON.stringify(userProfile, null, 2)}
+
+Here is the chat history so far:
 ${JSON.stringify(chatHistory, null, 2)}
 
 Here is the current website code:
@@ -282,35 +283,35 @@ ${websiteCode.css}
 JS:
 ${websiteCode.js}
 
-Your task:
-- Update the HTML, CSS, and JS files to reflect the user's website preferences.
-- Include all required pages and sections if listed.
-- Insert placeholders like <span id="goal"> or <div id="about-section">.
-- In script.js, fetch "/profile", "/history" and multiple pages website populate the HTML.
-- Make the site responsive and visually appealing.
-- By clicking the navbar "a" elements and buttons in open that particular section of code only.
-- Generate the dummy data in website according user need.
-- Use clean and modern design, respecting colorScheme, theme, etc.
+✅ Your task:
+- Update and improve the HTML, CSS, and JS files to reflect the user's requirements.
+- The site should simulate **multi-page navigation** using one file only.
+- When the user clicks "About" in the navbar, it should show the About section and hide others. Same for "Home", "Contact", etc.
+- JavaScript should handle this navigation dynamically.
+- Create placeholder sections like <section id="about-section"> for different pages.
+- Make sure the default visible section is "Home" (or first in navbar).
+- Keep the design responsive and visually appealing using CSS.
+- Include dummy content using the user's profile data where appropriate.
 
-Respond ONLY in this JSON format:
-{"updatedCode": {
-    "html": "string",
-    "css": "string",
-    "js": "string"
+Respond ONLY with JSON in the following structure:
+{
+  "updatedCode": {
+    "html": "HTML_CODE_STRING",
+    "css": "CSS_CODE_STRING",
+    "js": "JS_CODE_STRING"
   }
-}`;
+}
+Do not return markdown formatting, comments, or explanation.
+    `.trim();
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ 
-        role: "system", 
-        content: systemPromptBackground, 
-        text: { 
-          format: {
-            updatedCode: {html: "string", css: "string", js: "string"}
-          }
+      model: "gpt-4o-mini", // or "gpt-4o" 
+      messages: [
+        {
+          role: "system",
+          content: systemPromptBackground,
         }
-      }],
+      ]
     });
 
     let parsed;
@@ -321,8 +322,6 @@ Respond ONLY in this JSON format:
       return res.status(500).json({ error: "OpenAI response is not valid JSON", details: jsonErr.message });
     }
 
-    // Now safe to use parsed object
-    // fs.writeFileSync(profileFile, JSON.stringify(parsed.updatedUserProfile, null, 2));
     fs.writeFileSync(path.join(websiteDir, "index.html"), parsed.updatedCode.html);
     fs.writeFileSync(path.join(websiteDir, "styles.css"), parsed.updatedCode.css);
     fs.writeFileSync(path.join(websiteDir, "script.js"), parsed.updatedCode.js);
