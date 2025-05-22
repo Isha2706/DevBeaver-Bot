@@ -54,7 +54,7 @@ bot.command("menu", (ctx) => {
     "📋 *Main Menu*\n\nSelect one of the options below to get started:",
     {
       parse_mode: "Markdown",
-      ... Markup.inlineKeyboard([
+      ...Markup.inlineKeyboard([
         [
           Markup.button.callback("📋 Reset", "CMD_RESET"),
           Markup.button.callback("🆘 Help", "CMD_HELP"),
