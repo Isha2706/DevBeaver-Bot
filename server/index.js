@@ -288,6 +288,8 @@ ${websiteCode.js}
 - The site should simulate **multi-page navigation** using one file only.
 - When the user clicks "About" in the navbar, it should show the About section and hide others. Same for "Home", "Contact", etc.
 - JavaScript should handle this navigation dynamically.
+- you can add dummy data to show the design of website.
+- Use image according to aiAnalysis.
 - Create placeholder sections like <section id="about-section"> for different pages.
 - Make sure the default visible section is "Home" (or first in navbar).
 - Keep the design responsive and visually appealing using CSS.
