@@ -1,23 +1,35 @@
-import { Telegraf, Markup } from "telegraf";
-import dotenv from "dotenv";
-import fetch from "node-fetch";
-import fs from "fs-extra";
-import path from "path";
-import axios from "axios";
-import { fileURLToPath } from "url";
-import FormData from "form-data";
+/**
+ * Website Maker Telegram Bot
+ * This bot allows users to create, preview, and download multi-page websites through Telegram.
+ * It communicates with a backend server that handles the actual website generation.
+ * Telegram Bot Name = DevBeaver, Telegram Bot UserName = a_i_web_bot BotName
+*/
 
-dotenv.config();
+// Import required libraries
+import { Telegraf, Markup } from "telegraf";  // Telegram bot framework
+import dotenv from "dotenv";                  // Environment variable management
+import fetch from "node-fetch";               // HTTP requests (fetch API)
+import fs from "fs-extra";                    // Enhanced file system operations
+import path from "path";                      // Path manipulation utilities
+import axios from "axios";                    // HTTP client for more complex requests
+import { fileURLToPath } from "url";          // Convert file URLs to paths (for ESM)
+import FormData from "form-data";             // Form data for multipart/form-data requests
 
-// ESM-friendly __dirname
+dotenv.config(); // Load environment variables from .env file
+
+// Create ESM-friendly __dirname equivalent (not available in ES modules by default)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Initialize Telegram bot with token from environment variables
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-// Temp folder to save Telegram image before upload
+// Create temporary directory for storing files (like images) before processing
 const tempDir = path.join(__dirname, "temp");
-fs.ensureDirSync(tempDir);
+fs.ensureDirSync(tempDir); // Ensure the directory exists, create if it doesn't
 
-// For Menu Btn
+/**
+ * Configure bot menu commands that appear in the Telegram interface
+ * These commands will be shown in the bot's menu for easy access
+ */
 bot.telegram.setMyCommands([
   { command: "/start", description: "Start interacting with the bot" },
   { command: "/help", description: "Show available commands" },
@@ -27,9 +39,13 @@ bot.telegram.setMyCommands([
   { command: "/reset", description: "To erase previous data of Website" },
 ]);
 
-// Telegram Bot UserName = a_i_web_bot BotName = SiteBuilder Bot
+/**
+ * Handle /start command
+ * This is the entry point for users when they first interact with the bot
+ * Displays a welcome message with basic instructions
+ */
 bot.start((ctx) => {
-  console.log("welcome");
+  console.log("welcome"); // Log when a user starts the bot
 
   const welcomeMessage = `
 👋 *Welcome to the Website Wizard Bot!*
@@ -45,10 +61,14 @@ Here’s what you can do next:
 Let’s build something amazing together! 🚀
   `;
 
-  ctx.reply(welcomeMessage, { parse_mode: "Markdown" });
+  ctx.reply(welcomeMessage, { parse_mode: "Markdown" }); // Send formatted welcome message
 });
 
-// Menu command with inline keyboard
+/**
+ * Handle /menu command
+ * Displays an interactive menu with buttons for main bot functions
+ * Uses Telegraf's inline keyboard for better user experience
+ */
 bot.command("menu", (ctx) => {
   ctx.reply(
     "📋 *Main Menu*\n\nSelect one of the options below to get started:",
@@ -69,9 +89,13 @@ bot.command("menu", (ctx) => {
   );
 });
 
-// Handle callbacks
+/**
+ * Handle inline keyboard button callbacks
+ * Each callback provides information about the corresponding command
+ * ctx.answerCbQuery() acknowledges the button press to Telegram
+ */
 bot.action("CMD_RESET", async (ctx) => {
-  await ctx.answerCbQuery();
+  await ctx.answerCbQuery(); // Acknowledge the callback query
   await ctx.reply(
     "♻️ *Reset Command*\n\nClick /reset to clear your current data and start fresh! ✨",
     { parse_mode: "Markdown" }
@@ -110,7 +134,11 @@ bot.action("CMD_HELP", async (ctx) => {
   );
 });
 
-// /help command
+/**
+ * Handle /help command
+ * Provides detailed information about all available commands
+ * Formatted with Markdown for better readability
+ */
 bot.command("help", (ctx) => {
   const helpText = `
 🙋‍♂️ *Need Help? I’ve got you covered!*
@@ -140,11 +168,16 @@ If you need more help, feel free to ask. I'm here to assist! 😊
   ctx.reply(helpText, { parse_mode: "Markdown" });
 });
 
-// for POST /reset api
+/**
+ * Handle /reset command
+ * Calls the backend API to reset user data
+ * @param {string} userId - Unique identifier for the user
+ */
 bot.command("reset", async (ctx) => {
-  const userId = ctx.from.id.toString();
+  const userId = ctx.from.id.toString(); // Get user ID from context
 
   try {
+    // Call backend API to reset user data
     const response = await fetch(
       `${process.env.BASE_URL}/reset?userId=${userId}`
     );
@@ -158,21 +191,27 @@ bot.command("reset", async (ctx) => {
       await ctx.reply(`⚠️ Failed to reset: ${data.error}`);
     }
   } catch (error) {
-    console.error("Reset error:", error.message);
+    console.error("Reset error:", error.message); // Log error for debugging
     await ctx.reply("❌ An error occurred while resetting your data.");
   }
 });
 
-// for GET /update-git api
+/**
+ * Handle /preview command
+ * Updates Git repository and provides a preview URL
+ * @param {string} userId - Unique identifier for the user
+ */
 bot.command("preview", async (ctx) => {
   const chatId = ctx.chat.id;
   const userId = ctx.from.id.toString();
 
   try {
+    // Trigger backend to update Git repository with latest changes
     await axios.get(`${process.env.BASE_URL}/update-git`);
 
-    const previewUrl = `https://db-bot-web-preview.vercel.app/${userId}/webSite/`;
+    const previewUrl = `https://db-bot-web-preview.vercel.app/${userId}/webSite/`; // Generate preview URL with user ID
 
+    // Send preview link as clickable Markdown
     await ctx.reply(`🔗 [Click here to preview your website](${previewUrl})`, {
       parse_mode: "Markdown",
     });
@@ -182,35 +221,46 @@ bot.command("preview", async (ctx) => {
   }
 });
 
-// for GET /code/:userId api
+/**
+ * Handle /code command
+ * Retrieves website source code as a ZIP file from backend
+ * @param {string} userId - Unique identifier for the user
+ */
 bot.command("code", async (ctx) => {
   const userId = ctx.chat.id.toString();
 
   try {
+    // Request ZIP file from backend as a stream
     const fileRes = await axios.get(`${process.env.BASE_URL}/code/${userId}`, {
       responseType: "stream",
     });
 
+    // Save stream to temporary file
     const filePath = path.join(tempDir, `webSite-${userId}.zip`);
     const writer = fs.createWriteStream(filePath);
     fileRes.data.pipe(writer);
 
-    await new Promise((resolve) => writer.on("finish", resolve));
-    await ctx.replyWithDocument({ source: filePath, filename: "website.zip" });
-    fs.removeSync(filePath);
+    await new Promise((resolve) => writer.on("finish", resolve)); // Wait for file to finish writing
+    await ctx.replyWithDocument({ source: filePath, filename: "website.zip" }); // Send ZIP file to user
+    fs.removeSync(filePath); // Clean up temporary file
   } catch (e) {
     console.error(e);
     await ctx.reply("❌ Failed to download ZIP.");
   }
 });
 
-// for POST /promptbackground api
+/**
+ * Handle /generate command
+ * Triggers website generation on the backend
+ * @param {string} userId - Unique identifier for the user
+ */
 bot.command("generate", async (ctx) => {
   const userId = ctx.chat.id.toString(); // Use chat ID as userId
 
   await ctx.reply("Generating your website... Please wait.");
 
   try {
+    // Call backend API to generate website
     const response = await fetch(`${process.env.BASE_URL}/promptBackground`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -232,28 +282,37 @@ bot.command("generate", async (ctx) => {
   }
 });
 
-// for POST /upload-image/:userId api
+/**
+ * Handle photo messages
+ * Processes images sent by users, uploads them to backend for analysis
+ * @param {string} userId - Unique identifier for the user
+ * @param {string} caption - Optional text caption sent with the image
+ */
 bot.on("photo", async (ctx) => {
   const userId = ctx.chat.id.toString();
   const caption = ctx.message.caption || "";
 
+  // Get the highest resolution photo from the array of available sizes
   const photo = ctx.message.photo[ctx.message.photo.length - 1];
   const fileId = photo.file_id;
 
+  // Get download link for the photo
   const fileLink = await ctx.telegram.getFileLink(fileId);
-  const fileName = `${Date.now()}.jpg`;
+  const fileName = `${Date.now()}.jpg`; // Create unique filename using timestamp
   const filePath = path.join(tempDir, fileName);
 
+  // Download the image to temporary storage
   const writer = fs.createWriteStream(filePath);
   const response = await axios({ url: fileLink.href, responseType: "stream" });
   response.data.pipe(writer);
 
+  // Wait for download to complete
   await new Promise((resolve, reject) => {
     writer.on("finish", resolve);
     writer.on("error", reject);
   });
 
-  // Send to backend
+  // Prepare form data for backend upload
   const form = new FormData();
   form.append("images", fs.createReadStream(filePath));
   form.append("text", caption);
@@ -266,7 +325,7 @@ bot.on("photo", async (ctx) => {
         headers: form.getHeaders(),
       }
     );
-
+    // Format and display AI analysis results
     const { images } = uploadRes.data;
     const messages = images
       .map((img) => `🖼 ${img.originalname}\n📌 ${img.aiAnalysis}`)
@@ -278,15 +337,21 @@ bot.on("photo", async (ctx) => {
     await ctx.reply("❌ Failed to upload or analyze image.");
   }
 
-  fs.removeSync(filePath); // Clean up
+  fs.removeSync(filePath); // Clean up temporary file
 });
 
-// for POST /chat api
+/**
+ * Handle text messages
+ * Processes regular text messages and sends them to backend chat API
+ * @param {string} message - The text message from the user
+ * @param {string} userId - Unique identifier for the user
+ */
 bot.on("text", async (ctx) => {
   const message = ctx.message.text;
   const userId = ctx.from.id.toString();
 
   try {
+     // Send message to backend chat API
     const res = await fetch(`${process.env.BASE_URL}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -301,8 +366,8 @@ bot.on("text", async (ctx) => {
   }
 });
 
-console.log("🤖 Bot started");
-bot.launch();
+console.log("🤖 Bot started"); // Log when bot starts successfully
+bot.launch(); // Start the bot
 
 // Enable graceful stop
 process.once("SIGINT", () => bot.stop("SIGINT"));
