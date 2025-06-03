@@ -1,6 +1,6 @@
 /**
- * Website Maker Bot - Backend Server
- * This server handles all the backend operations for the Website Maker Bot,
+ * DevBeaver Bot - Backend Server
+ * This server handles all the backend operations for the DevBeaver Bot,
  * including user data management, website generation, image processing, and API endpoints.
  */
 

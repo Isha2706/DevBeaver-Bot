@@ -1,8 +1,8 @@
 /**
- * Website Maker Telegram Bot
+ * DevBeaver Telegram Bot
+ * a_i_web_bot Telegram Bot UserName
  * This bot allows users to create, preview, and download multi-page websites through Telegram.
  * It communicates with a backend server that handles the actual website generation.
- * Telegram Bot Name = DevBeaver, Telegram Bot UserName = a_i_web_bot BotName
 */
 
 // Import required libraries
