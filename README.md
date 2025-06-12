@@ -85,9 +85,9 @@ DevBeaver simplifies the web development process using a conversational approach
 
 4. **Run the Bot**
    
-  ```bash
-  node server/index.js
-  node telegram-bot/index.js
-  ```
+   ```bash
+   node server/index.js
+   node telegram-bot/index.js
+   ```
 
 5. **Start Chatting** on Telegram!
