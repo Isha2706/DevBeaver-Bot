@@ -61,20 +61,18 @@ DevBeaver simplifies the web development process using a conversational approach
 
 ## 📥 How to Use (Locally)
 
-1. **Clone the Repo**
-   
+### 1. Clone the Repo
    ```bash
    git clone https://github.com/Isha2706/DevBeaver-Bot.git
    cd DevBeaver-Bot
    ```
    
-2. **Install Dependencies**
-   
+### 2. Install Dependencies  
    ```bash
    npm install
    ```
    
-3. **Configure Environment**
+### 3. Configure Environment
 
 - Create a `.env` file with:
      
@@ -83,11 +81,10 @@ DevBeaver simplifies the web development process using a conversational approach
   OPENAI_API_KEY=your_key
   VERCEL_API_TOKEN=your_token
 
-4. **Run the Bot**
-   
+### 4. Run the Bot   
    ```bash
    node server/index.js
    node telegram-bot/index.js
    ```
 
-5. **Start Chatting** on Telegram!
+### 5. **Start Chatting** on Telegram!
